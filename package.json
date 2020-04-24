@@ -1,0 +1,9 @@
+{
+  "name": "maze_creator",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "express": "latest",
+    "body-parser": "latest"
+  }
+}
