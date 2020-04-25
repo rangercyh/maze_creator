@@ -4,19 +4,53 @@
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <time.h>
+
+#define BITMASK(b) (1 << ((b) % CHAR_BIT))
+#define BITSLOT(b) ((b) / CHAR_BIT)
+#define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))
+#define BITCLEAR(a, b) ((a)[BITSLOT(b)] &= ~BITMASK(b))
+#define BITTEST(a, b) ((a)[BITSLOT(b)] & BITMASK(b))
 
 typedef struct link_node {
     int x;
     int y;
-    struct link_node *pre;
-    struct link_node *gc;
+    unsigned char m[0];
 } PATH_NODE;
 
-typedef struct gc_list {
-    PATH_NODE *first;
-    PATH_NODE *last;
-} GC_LIST;
+typedef struct path_stack {
+    int capacity;
+    int top;
+    PATH_NODE *arr[0];
+} PATH_STACK;
+
+static inline void
+push(PATH_STACK *s, PATH_NODE *node) {
+    s->top++;
+    s->arr[s->top] = node;
+}
+
+static inline PATH_NODE *
+pop(PATH_STACK *s) {
+    if (s->top < 0) {
+        return NULL;
+    } else {
+        return s->arr[s->top--];
+    }
+}
+
+static inline PATH_NODE *
+top(PATH_STACK *s) {
+    if (s->top < 0) {
+        return NULL;
+    } else {
+        return s->arr[s->top];
+    }
+}
+
+static inline int
+full(PATH_STACK *s) {
+    return s->top == s->capacity - 1;
+}
 
 static inline int
 getfield(lua_State *L, const char *f) {
@@ -32,18 +66,18 @@ static inline int check_in_map(int x, int y, int w, int h) {
     return x >= 0 && y >= 0 && x < w && y < h;
 }
 
-static PATH_NODE *construct(int x, int y, GC_LIST *l) {
-    PATH_NODE *node = (PATH_NODE *)malloc(sizeof(PATH_NODE));
+static PATH_NODE *construct(int x, int y, int w, int h, unsigned char *father_map) {
+    int map_len = w * h;
+    int mem_len = BITSLOT(map_len) + 1;
+    PATH_NODE *node = (PATH_NODE *)malloc(sizeof(PATH_NODE) + mem_len * sizeof(node->m[0]));
     node->x = x;
     node->y = y;
-    node->pre = NULL;
-    node->gc = NULL;
-    if (!l->first) {
-        l->first = node;
+    if (father_map == NULL) {
+        memset(node->m, 0, mem_len * sizeof(node->m[0]));
     } else {
-        l->last->gc = node;
+        memcpy(node->m, father_map, mem_len * sizeof(node->m[0]));
     }
-    l->last = node;
+    BITSET(node->m, y * w + x);
     return node;
 }
 
@@ -83,51 +117,50 @@ static int *shuffe() {
     for (i = 4; i > 0; i--) {
         s = rand() % i;
         c = r[s];
-        r[s] = r[i];
-        r[i] = c;
+        r[s] = r[i - 1];
+        r[i - 1] = c;
     }
     return r;
 }
 
-static int check_expanded(int x, int y, PATH_NODE *pre) {
-    PATH_NODE *p = pre;
-    while (p) {
-        if (p->x == x && p->y == y) {
-            return 1;
+static int
+find_path(PATH_STACK *s, int w, int h) {
+    PATH_NODE *p = top(s);
+    if (p != NULL) {
+        int *arr = shuffe(), mark = 0;
+        for (int i = 0; i < 4; i++) {
+            int *pos = get_neighbor(p->x, p->y, arr[i]);
+            int nx = pos[0], ny = pos[1];
+            if (check_in_map(nx, ny, w, h) && !BITTEST(p->m, ny * w + nx)) {
+                PATH_NODE *cur = construct(nx, ny, w, h, p->m);
+                push(s, cur);
+                mark = 1;
+                if (full(s)) {
+                    return 1;
+                }
+                if (find_path(s, w, h)) {
+                    return 1;
+                }
+            }
         }
-        p = p->pre;
+        if (!mark) {
+            PATH_NODE *p = pop(s);
+            if (p != NULL) {
+                free(p);
+            }
+        }
     }
     return 0;
 }
 
-static PATH_NODE *
-find_path(int path_limit, int len, int x, int y, int w, int h, PATH_NODE *pre, GC_LIST *gc) {
-    int *arr = shuffe();
-    for (int i = 0; i < 4; i++) {
-        int *pos = get_neighbor(x, y, arr[i]);
-        int nx = pos[0], ny = pos[1];
-        if (check_in_map(nx, ny, w, h) && !check_expanded(nx, ny, pre)) {
-            PATH_NODE *cur = construct(nx, ny, gc);
-            cur->pre = pre;
-            if (len + 1 >= path_limit) {
-                return cur;
-            }
-            PATH_NODE *r = find_path(path_limit, len + 1, nx, ny, w, h, cur, gc);
-            if (r) {
-                return r;
-            }
-        }
-    }
-    return NULL;
-}
-
 static void
-form_path(lua_State *L, PATH_NODE *last) {
+back_tracking(lua_State *L, PATH_STACK *s) {
     lua_newtable(L);
     int num = 0;
-    PATH_NODE *p = last;
     int x, y;
-    while (p) {
+    PATH_NODE *p;
+    while (s->top >= 0) {
+        p = s->arr[s->top--];
         x = p->x;
         y = p->y;
         lua_newtable(L);
@@ -136,7 +169,7 @@ form_path(lua_State *L, PATH_NODE *last) {
         lua_pushinteger(L, y);
         lua_rawseti(L, -2, 2);
         lua_rawseti(L, -2, ++num);
-        p = p->pre;
+        free(p);
     }
 }
 
@@ -153,22 +186,18 @@ create_maze(lua_State *L) {
     if (path_limit <= 0 || path_limit > w * h) {
         return 0;
     }
-    GC_LIST *list = (GC_LIST *)malloc(sizeof(GC_LIST));
-    list->first = list->last = NULL;
-    PATH_NODE *first = construct(sx, sy, list);
+    PATH_STACK *s = (PATH_STACK *)malloc(sizeof(PATH_STACK) + path_limit * sizeof(s->arr[0]));
+    s->capacity = path_limit;
+    s->top = -1;
+    PATH_NODE *first = construct(sx, sy, w, h, NULL);
+    push(s, first);
     if (path_limit == 1) {
-        form_path(L, first);
+        back_tracking(L, s);
     } else {
-        PATH_NODE *last = find_path(path_limit, 1, sx, sy, w, h, first, list);
-        form_path(L, last);
+        find_path(s, w, h);
+        back_tracking(L, s);
     }
-    PATH_NODE *p = list->first;
-    while (p) {
-        list->first = list->first->gc;
-        free(p);
-        p = list->first;
-    }
-    free(list);
+    free(s);
     return 1;
 }
 
