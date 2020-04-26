@@ -108,26 +108,23 @@ static int *get_neighbor(int x, int y, int dir) {
     return pos;
 }
 
-static int *shuffe() {
+static void shuffe(int *r) {
     int i, s, c;
-    static int r[4] = { 1, 2, 3, 4 };
-    for (i = 0; i < 4; i++) {
-        r[i] = i + 1;
-    }
     for (i = 4; i > 0; i--) {
         s = rand() % i;
         c = r[s];
         r[s] = r[i - 1];
         r[i - 1] = c;
     }
-    return r;
 }
 
 static int
 find_path(PATH_STACK *s, int w, int h) {
     PATH_NODE *p = top(s);
     if (p != NULL) {
-        int *arr = shuffe(), mark = 0;
+        int arr[4] = { 1, 2, 3, 4 };
+        int mark = 0;
+        shuffe(arr);
         for (int i = 0; i < 4; i++) {
             int *pos = get_neighbor(p->x, p->y, arr[i]);
             int nx = pos[0], ny = pos[1];
