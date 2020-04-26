@@ -1,7 +1,7 @@
 local maze = require "maze"
 local t1 = os.clock()
-local w, h, sx, sy = 10, 10, 4, 1
-local l = 20
+local w, h, sx, sy = 10, 10, 0, 0
+local l = 86
 
 maze.set_rseed(123444)
 function get_path_idx(t, x, y)
@@ -27,18 +27,24 @@ function test(w, h, sx, sy, l, i)
     local s = ""
     for i = 0, h - 1 do
         for j = 0, w - 1 do
-            local idx = get_path_idx(t, i, j)
+            local idx = get_path_idx(t, j, i)
             if idx then
-                s = s .. idx .. ' '
+                local a = 4 - utf8.len(idx)
+                local p = ''
+                while a > 0 do
+                    p = p .. ' '
+                    a = a - 1
+                end
+                s = s .. idx .. p
             else
-                s = s .. '* '
+                s = s .. '*   '
             end
         end
         s = s .. '\n'
     end
     return s
 end
-for i = 1, 100 do
+for i = 1, 1 do
     print(test(w, h, sx, sy, l, i))
 end
 

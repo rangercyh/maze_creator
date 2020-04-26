@@ -140,6 +140,8 @@ find_path(PATH_STACK *s, int w, int h) {
                 }
                 if (find_path(s, w, h)) {
                     return 1;
+                } else {
+                    mark = 0;
                 }
             }
         }
