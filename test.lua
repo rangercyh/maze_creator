@@ -1,8 +1,9 @@
 local maze = require "maze"
 local t1 = os.clock()
-local w, h, sx, sy = 7, 7, 0, 0
-local l = 40
-local ex_num, ex_limit = 1, 3
+local w, h, sx, sy = 5, 5, 0, 0
+local l = 25
+local ex_num, ex_limit = 11, 3
+
 
 local char = {
     [-1] = 'S',
@@ -21,21 +22,21 @@ function get_path_idx(t, x, y)
     end
 end
 
-function get_path_char(t, x, y)
+function get_show(t, x, y)
     for i = 1, t.num do
         if x == t[i][1] and y == t[i][2] then
-            return t[i].dir
+            return t[i].show
         end
     end
 end
 
-function add_dir_char(t, x, y, ch)
+function add_show_char(t, x, y, ch)
     for i = 1, t.num do
         if x == t[i][1] and y == t[i][2] then
-            if not(t[i].dir) then
-                t[i].dir = ch
+            if not(t[i].show) then
+                t[i].show = ch
             else
-                t[i].dir = t[i].dir .. ch
+                t[i].show = t[i].show .. ch
             end
         end
     end
@@ -59,30 +60,38 @@ function test(w, h, sx, sy, l, ex_num, ex_limit)
     w = t.w
     h = t.h
     for i = 1, t.num do
+        if t[i][4] == 1 then
+            add_show_char(t, t[i][1], t[i][2], 'P')
+        end
+        if t[i][4] == 2 then
+            add_show_char(t, t[i][1], t[i][2], 'X')
+        end
         if t[i][3] == -1 then
-            add_dir_char(t, t[i][1], t[i][2], char[-1])
-        end
-        if t[i][3] == 0 then
-            add_dir_char(t, t[i][1], t[i][2] + 1, char[0])
-        end
-        if t[i][3] == 1 then
-            add_dir_char(t, t[i][1], t[i][2] - 1, char[1])
-        end
-        if t[i][3] == 2 then
-            add_dir_char(t, t[i][1] + 1, t[i][2], char[2])
-        end
-        if t[i][3] == 3 then
-            add_dir_char(t, t[i][1] - 1, t[i][2], char[3])
+            add_show_char(t, t[i][1], t[i][2], char[-1])
         end
     end
-    t[1].dir = 'E'
+    for i = 1, t.num do
+        if t[i][3] == 0 then
+            add_show_char(t, t[i][1], t[i][2] + 1, char[0])
+        end
+        if t[i][3] == 1 then
+            add_show_char(t, t[i][1], t[i][2] - 1, char[1])
+        end
+        if t[i][3] == 2 then
+            add_show_char(t, t[i][1] + 1, t[i][2], char[2])
+        end
+        if t[i][3] == 3 then
+            add_show_char(t, t[i][1] - 1, t[i][2], char[3])
+        end
+    end
+    t[1].show = 'E'
     local s = ""
     for i = 0, h - 1 do
         for j = 0, w - 1 do
-            local ch = get_path_char(t, j, i)
+            local ch = get_show(t, j, i)
             -- local ch = get_path_idx(t, j, i)
             if ch then
-                local a = 4 - utf8.len(ch)
+                local a = 5 - utf8.len(ch)
                 local p = ''
                 while a > 0 do
                     p = p .. ' '
@@ -90,14 +99,14 @@ function test(w, h, sx, sy, l, ex_num, ex_limit)
                 end
                 s = s .. ch .. p
             else
-                s = s .. '*   '
+                s = s .. '*    '
             end
         end
         s = s .. '\n'
     end
     return s
 end
-for i = 1, 1000 do
+for i = 1, 10 do
     print(test(w, h, sx, sy, l, ex_num, ex_limit))
 end
 

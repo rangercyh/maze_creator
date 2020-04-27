@@ -98,31 +98,25 @@ static PATH_NODE *construct(PATH_NODE **map_node, int x, int y, int dir,
 #define LEFT 2
 #define RIGHT 3
 
-static int *get_neighbor(int x, int y, int dir) {
-    static int pos[2] = {0};
+static void get_neighbor(int *pos, int dir) {
     switch (dir) {
         case UP: {
-            pos[0] = x;
-            pos[1] = y - 1;
+            pos[1] = pos[1] - 1;
             break;
         }
         case DOWN: {
-            pos[0] = x;
-            pos[1] = y + 1;
+            pos[1] = pos[1] + 1;
             break;
         }
         case LEFT: {
-            pos[0] = x - 1;
-            pos[1] = y;
+            pos[0] = pos[0] - 1;
             break;
         }
         case RIGHT: {
-            pos[0] = x + 1;
-            pos[1] = y;
+            pos[0] = pos[0] + 1;
             break;
         }
     }
-    return pos;
 }
 
 static void shuffe(int *r) {
@@ -139,18 +133,17 @@ static int
 find_path(PATH_STACK *s, PATH_NODE **map_node, int w, int h) {
     PATH_NODE *p = top(s), *cur;
     if (p != NULL) {
-        int *pos, nx, ny, mark = 0;
+        int nx, ny, mark = 0;
         int arr[DIR_NUM] = { UP, DOWN, LEFT, RIGHT };
         shuffe(arr);
         for (int i = 0; i < DIR_NUM; i++) {
-            pos = get_neighbor(p->x, p->y, arr[i]);
+            int pos[2] = { p->x, p->y };
+            get_neighbor(pos, arr[i]);
             nx = pos[0];
             ny = pos[1];
-            // printf("check nei x = %d, y = %d, nx = %d, ny = %d, dir = %d\n", p->x, p->y, nx, ny, arr[i]);
             if (check_in_map(nx, ny, w, h) && !BITTEST(p->m, ny * w + nx)) {
                 cur = construct(map_node, nx, ny, arr[i], w, h, p->m);
                 push(s, cur);
-                // printf("push create node x = %d, y = %d, nx = %d, ny = %d\n", p->x, p->y, nx, ny);
                 mark = 1;
                 if (full(s)) {
                     return 1;
@@ -164,7 +157,6 @@ find_path(PATH_STACK *s, PATH_NODE **map_node, int w, int h) {
         }
         if (!mark) {
             pop(s);
-            // printf("pop node x = %d, y = %d\n", p->x, p->y);
         }
     }
     return 0;
@@ -242,27 +234,27 @@ push_candidate(CANDIDATE_LIST *c, CANDIDATE_NODE *p) {
 static void
 search_candidate_neighbor(int x, int y, int w, int h, unsigned char *m,
     CANDIDATE_LIST *c, EXPAND_LIST *l, int limit, int dir, int dir_num) {
-    int *pos;
     int cx, cy;
     for (int i = 0; i < DIR_NUM; i++) {
-        pos = get_neighbor(x, y, i);
+        int pos[2] = { x, y };
+        get_neighbor(pos, i);
         cx = pos[0];
         cy = pos[1];
         if (dir == i && (dir_num + 1) > limit) {
-            break;
+            continue;
         }
         if (check_in_path(cx, cy, w, h, m)) {
-            break;
+            continue;
         }
         if (check_in_expand(l, cx, cy)) {
-            break;
+            continue;
         }
         CANDIDATE_NODE *p = check_in_candidate(c, cx, cy);
         if (p != NULL) {
             p->dir_unit[i] += 1;
-            break;
+            continue;
         }
-        push_candidate(c, construct_candidate(cx, cy, i, ((i == dir) ? dir_num : 0)));
+        push_candidate(c, construct_candidate(cx, cy, i, (i == dir) ? dir_num : 0));
     }
 }
 
@@ -281,14 +273,11 @@ search_for_candidate(PATH_STACK *s, EXPAND_LIST *l, int limit, int w, int h) {
 
 static void release_candidate(CANDIDATE_LIST *c) {
     if (c != NULL) {
-        CANDIDATE_NODE *p;
-        while (c->head != c->tail) {
-            p = c->head;
-            c->head = c->head->next;
+        CANDIDATE_NODE *p = c->head;
+        for (int i = 0; i < c->num; i++) {
+            c->head = p->next;
             free(p);
-        }
-        if (c->head != NULL) {
-            free(c->head);
+            p = c->head;
         }
         free(c);
         c = NULL;
@@ -327,29 +316,33 @@ expand(PATH_STACK *s, int ex_num, int ex_limit, int w, int h) {
     }
     EXPAND_LIST *l = (EXPAND_LIST *)malloc(sizeof(EXPAND_LIST) + ex_num * sizeof(CANDIDATE_NODE *));
     l->num = 0;
-    printf("create l\n");
-    // CANDIDATE_LIST *c = search_for_candidate(s, l, ex_limit, w, h);
-    // int pos;
-    // CANDIDATE_NODE *p, *q;
-    // while (ex_num-- > 0) {
-    //     pos = rand() % c->num;
-    //     p = c->head;
-    //     if (pos == 0) {
-    //         c->head = c->head->next;
-    //         c->num--;
-    //     } else {
-    //         pos--;
-    //         while (pos-- > 0) {
-    //             p = p->next;
-    //         }
-    //         q = p->next;
-    //         p->next = p->next->next;
-    //         p = q;
-    //     }
-    //     int dir_num = add_expand(l, p);
-    //     search_candidate_neighbor(p->x, p->y, w, h, end->m, c, l, ex_limit, p->choose_dir, dir_num);
-    // }
-    // release_candidate(c);
+    CANDIDATE_LIST *c = search_for_candidate(s, l, ex_limit, w, h);
+    int pos;
+    CANDIDATE_NODE *p, *q;
+    while (ex_num-- > 0 && c->num > 0) {
+        pos = rand() % c->num;
+        p = c->head;
+        if (pos == 0) {
+            c->head = p->next;
+            if (c->tail == p) {
+                c->tail = c->head;
+            }
+        } else {
+            pos--;
+            while (pos-- > 0) {
+                p = p->next;
+            }
+            q = p->next;
+            if (c->tail == q) {
+                c->tail = p;
+            }
+            p->next = q->next;
+            p = q;
+        }
+        c->num--;
+        search_candidate_neighbor(p->x, p->y, w, h, end->m, c, l, ex_limit, p->choose_dir, add_expand(l, p));
+    }
+    release_candidate(c);
     return l;
 }
 
@@ -375,7 +368,7 @@ check_min_bound(int cur, int bound) {
 }
 
 static inline void
-add_lua_table(lua_State *L, int x, int y, int dir, int pos) {
+add_lua_table(lua_State *L, int x, int y, int dir, int pos, int mark) {
     lua_newtable(L);
     lua_pushinteger(L, x);
     lua_rawseti(L, -2, 1);
@@ -383,8 +376,13 @@ add_lua_table(lua_State *L, int x, int y, int dir, int pos) {
     lua_rawseti(L, -2, 2);
     lua_pushinteger(L, dir);
     lua_rawseti(L, -2, 3);
+    lua_pushinteger(L, mark);
+    lua_rawseti(L, -2, 4);
     lua_rawseti(L, -2, pos);
 }
+
+#define PATH_MARK 1
+#define EXPAND_MARK 2
 
 static void
 dump_to_lua(lua_State *L, PATH_STACK *s, EXPAND_LIST *l,
@@ -401,10 +399,7 @@ dump_to_lua(lua_State *L, PATH_STACK *s, EXPAND_LIST *l,
         p = s->arr[s->top--];
         x = p->x + xshift;
         y = p->y + yshift;
-        // printf("push = %d %d %d\n", x, y, p->dir);
-        add_lua_table(L, x, y, p->dir, ++num);
-        // free(p);
-        // p = NULL;
+        add_lua_table(L, x, y, p->dir, ++num, PATH_MARK);
     }
     CANDIDATE_NODE *q;
     if (l != NULL) {
@@ -412,9 +407,7 @@ dump_to_lua(lua_State *L, PATH_STACK *s, EXPAND_LIST *l,
             q = l->arr[i];
             x = q->x + xshift;
             y = q->y + yshift;
-            add_lua_table(L, x, y, q->choose_dir, ++num);
-            // free(q);
-            // q = NULL;
+            add_lua_table(L, x, y, q->choose_dir, ++num, EXPAND_MARK);
         }
     }
     lua_pushinteger(L, num);
@@ -434,10 +427,8 @@ form_path(lua_State *L, PATH_STACK *s, EXPAND_LIST *l, int w, int h) {
         max_y = check_max_bound(y, max_y);
         min_x = check_min_bound(x, min_x);
         min_y = check_min_bound(y, min_y);
-        // printf("stack trace = %d %d\n", x, y);
     }
     if (l != NULL) {
-        printf("l num = %d \n", l->num);
         for (int i = 0; i < l->num; i++) {
             x = l->arr[i]->x;
             y = l->arr[i]->y;
@@ -445,10 +436,8 @@ form_path(lua_State *L, PATH_STACK *s, EXPAND_LIST *l, int w, int h) {
             max_y = check_max_bound(y, max_y);
             min_x = check_min_bound(x, min_x);
             min_y = check_min_bound(y, min_y);
-            printf("l trace = %d %d\n", x, y);
         }
     }
-    printf("form_path = %d %d  %d  %d\n", min_x, max_x, min_y, max_y);
     dump_to_lua(L, s, l, max_x - min_x + 1, max_y - min_y + 1, -min_x, -min_y);
     release_expand(l);
 }
@@ -490,7 +479,7 @@ create_maze(lua_State *L) {
     PATH_NODE *first = construct(map_node, sx, sy, EMPTY_DIR, w, h, NULL);
     push(s, first);
     if (path_limit > 1) {
-        printf("found path = %d\n", find_path(s, map_node, w, h));
+        find_path(s, map_node, w, h);
     }
     form_path(L, s, expand(s, ex_num, ex_limit, w, h), w, h);
     free(s);
