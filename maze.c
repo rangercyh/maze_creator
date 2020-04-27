@@ -67,10 +67,18 @@ static inline int check_in_map(int x, int y, int w, int h) {
     return x >= 0 && y >= 0 && x < w && y < h;
 }
 
-static PATH_NODE *construct(int x, int y, int dir, int w, int h, unsigned char *father_map) {
+static PATH_NODE *construct(PATH_NODE **map_node, int x, int y, int dir,
+        int w, int h, unsigned char *father_map) {
+    int pos = y * w + x;
     int map_len = w * h;
     int mem_len = BITSLOT(map_len) + 1;
-    PATH_NODE *node = (PATH_NODE *)malloc(sizeof(PATH_NODE) + mem_len * sizeof(node->m[0]));
+    PATH_NODE *node;
+    if (map_node[pos] == NULL) {
+        node = (PATH_NODE *)malloc(sizeof(PATH_NODE) + mem_len * sizeof(node->m[0]));
+        map_node[pos] = node;
+    } else {
+        node = map_node[pos];
+    }
     node->x = x;
     node->y = y;
     node->dir = dir;
@@ -128,7 +136,7 @@ static void shuffe(int *r) {
 }
 
 static int
-find_path(PATH_STACK *s, int w, int h) {
+find_path(PATH_STACK *s, PATH_NODE **map_node, int w, int h) {
     PATH_NODE *p = top(s), *cur;
     if (p != NULL) {
         int *pos, nx, ny, mark = 0;
@@ -140,14 +148,14 @@ find_path(PATH_STACK *s, int w, int h) {
             ny = pos[1];
             // printf("check nei x = %d, y = %d, nx = %d, ny = %d, dir = %d\n", p->x, p->y, nx, ny, arr[i]);
             if (check_in_map(nx, ny, w, h) && !BITTEST(p->m, ny * w + nx)) {
-                cur = construct(nx, ny, arr[i], w, h, p->m);
+                cur = construct(map_node, nx, ny, arr[i], w, h, p->m);
                 push(s, cur);
                 // printf("push create node x = %d, y = %d, nx = %d, ny = %d\n", p->x, p->y, nx, ny);
                 mark = 1;
                 if (full(s)) {
                     return 1;
                 }
-                if (find_path(s, w, h)) {
+                if (find_path(s, map_node, w, h)) {
                     return 1;
                 } else {
                     mark = 0;
@@ -155,12 +163,8 @@ find_path(PATH_STACK *s, int w, int h) {
             }
         }
         if (!mark) {
-            PATH_NODE *p = pop(s);
-            if (p != NULL) {
-                printf("pop node x = %d, y = %d\n", p->x, p->y);
-                free(p);
-                p = NULL;
-            }
+            pop(s);
+            // printf("pop node x = %d, y = %d\n", p->x, p->y);
         }
     }
     return 0;
@@ -383,7 +387,8 @@ add_lua_table(lua_State *L, int x, int y, int dir, int pos) {
 }
 
 static void
-dump_to_lua(lua_State *L, PATH_STACK *s, EXPAND_LIST *l, int w, int h, int xshift, int yshift) {
+dump_to_lua(lua_State *L, PATH_STACK *s, EXPAND_LIST *l,
+        int w, int h, int xshift, int yshift) {
     lua_newtable(L);
     lua_pushinteger(L, w);
     lua_setfield(L, -2, "w");
@@ -398,8 +403,8 @@ dump_to_lua(lua_State *L, PATH_STACK *s, EXPAND_LIST *l, int w, int h, int xshif
         y = p->y + yshift;
         // printf("push = %d %d %d\n", x, y, p->dir);
         add_lua_table(L, x, y, p->dir, ++num);
-        free(p);
-        p = NULL;
+        // free(p);
+        // p = NULL;
     }
     CANDIDATE_NODE *q;
     if (l != NULL) {
@@ -408,8 +413,8 @@ dump_to_lua(lua_State *L, PATH_STACK *s, EXPAND_LIST *l, int w, int h, int xshif
             x = q->x + xshift;
             y = q->y + yshift;
             add_lua_table(L, x, y, q->choose_dir, ++num);
-            free(q);
-            q = NULL;
+            // free(q);
+            // q = NULL;
         }
     }
     lua_pushinteger(L, num);
@@ -448,6 +453,18 @@ form_path(lua_State *L, PATH_STACK *s, EXPAND_LIST *l, int w, int h) {
     release_expand(l);
 }
 
+static void
+release_map_node(PATH_NODE **map_node, int len) {
+    for (int i = 0; i < len; i++) {
+        if (map_node[i] != NULL) {
+            free(map_node[i]);
+            map_node[i] = NULL;
+        }
+    }
+    free(map_node);
+    map_node = NULL;
+}
+
 static int
 create_maze(lua_State *L) {
     luaL_checktype(L, 1, LUA_TTABLE);
@@ -466,13 +483,18 @@ create_maze(lua_State *L) {
     PATH_STACK *s = (PATH_STACK *)malloc(sizeof(PATH_STACK) + path_limit * sizeof(s->arr[0]));
     s->capacity = path_limit;
     s->top = -1;
-    PATH_NODE *first = construct(sx, sy, EMPTY_DIR, w, h, NULL);
+    PATH_NODE **map_node = (PATH_NODE **)malloc(w * h * sizeof(PATH_NODE *));
+    for (int i = 0; i < w * h; i++) {
+        map_node[i] = NULL;
+    }
+    PATH_NODE *first = construct(map_node, sx, sy, EMPTY_DIR, w, h, NULL);
     push(s, first);
     if (path_limit > 1) {
-        printf("found path = %d\n", find_path(s, w, h));
+        printf("found path = %d\n", find_path(s, map_node, w, h));
     }
     form_path(L, s, expand(s, ex_num, ex_limit, w, h), w, h);
     free(s);
+    release_map_node(map_node, w * h);
     return 1;
 }
 
