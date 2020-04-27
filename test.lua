@@ -1,7 +1,7 @@
 local maze = require "maze"
 local t1 = os.clock()
-local w, h, sx, sy = 10, 10, 4, 1
-local l = 84
+local w, h, sx, sy = 7, 7, 0, 0
+local l = 40
 local ex_num, ex_limit = 1, 3
 
 local char = {
@@ -55,7 +55,7 @@ function test(w, h, sx, sy, l, ex_num, ex_limit)
         print('no found path!')
         return
     end
-    print('======== w = ', t.w, '  h = ', t.h, '  num = ', t.num)
+    print('===== w =', t.w, 'h =', t.h, 'num =', t.num)
     w = t.w
     h = t.h
     for i = 1, t.num do
@@ -75,11 +75,12 @@ function test(w, h, sx, sy, l, ex_num, ex_limit)
             add_dir_char(t, t[i][1] - 1, t[i][2], char[3])
         end
     end
+    t[1].dir = 'E'
     local s = ""
     for i = 0, h - 1 do
         for j = 0, w - 1 do
-            -- local ch = get_path_char(t, j, i)
-            local ch = get_path_idx(t, j, i)
+            local ch = get_path_char(t, j, i)
+            -- local ch = get_path_idx(t, j, i)
             if ch then
                 local a = 4 - utf8.len(ch)
                 local p = ''
@@ -96,7 +97,7 @@ function test(w, h, sx, sy, l, ex_num, ex_limit)
     end
     return s
 end
-for i = 1, 1 do
+for i = 1, 1000 do
     print(test(w, h, sx, sy, l, ex_num, ex_limit))
 end
 
