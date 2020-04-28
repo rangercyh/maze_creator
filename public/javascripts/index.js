@@ -41,8 +41,8 @@ form.controller('input_controller', function($scope, $http) {
         }).then(function(resp) {
             console.log('succ call')
             console.log(resp)
-            document.getElementById("map").innerHTML="";
             let data = resp.data
+            document.getElementById("map").innerHTML=""
             if (typeof(data.errmsg) != "undefined") {
                 alert(data.errmsg)
             } else {
@@ -71,6 +71,7 @@ form.controller('input_controller', function($scope, $http) {
                     grids[data.ex[i][1]].innerHTML = data.ex[i][2]
                     grids[data.ex[i][1]].style["background"] = "red"
                 }
+                document.getElementById("time").innerHTML= "use time: " + data.time + " ms"
             }
         }, function(resp) {
             // $scope.data = resp.data || 'Request failed';

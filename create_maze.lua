@@ -21,6 +21,7 @@ local options = {
 local r = {}
 
 maze.set_rseed(tonumber(tostring(os.time()):reverse():sub(1,6)))
+local t1 = os.clock()
 local t = maze.create_maze({
     w = w,
     h = h,
@@ -40,6 +41,7 @@ r.w = t.w
 r.h = t.h
 r.path = {}
 r.ex = {}
+r.time = os.clock() - t1
 
 local char = {
     [-1] = 'S',
