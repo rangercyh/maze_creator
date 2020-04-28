@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body>
+
+<div ng-app="input_form" ng-controller="input_controller">
+    <form novalidate>
+    输入地图信息生成迷宫：<br>
+    宽：[2-10] <input type="number" min="2" max="10" ng-model="w" id="w"><br>
+    高：[2-10] <input type="number" min="2" max="10" ng-model="h" id="h"><br>
+    房间数量：[1-{{set_span(w*h)}}] <input type="number" ng-model="l" id="l" min="1"><br>
+    起点 x：[1-{{w}}] <input type="number" ng-model="x" id="x" min="1" max={{w}}><br>
+    起点 y：[1-{{h}}] <input type="number" ng-model="y" id="y" min="1" max={{h}}><br>
+    扩展数量：[0-100] <input type="number" ng-model="ex_num" id="ex_num" min="0" max="100"><br>
+    扩展限制：[1-100] <input type="number" ng-model="ex_limit", id="ex_limit" min="1" max="100"><br>
+    </form>
+    <button ng-click="submit()">生成迷宫</button>
+</div>
+<div id='map'></div>
+<script src="https://cdn.staticfile.org/angular.js/1.4.6/angular.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.0.min.js"></script>
+<script type="text/javascript" src="./javascripts/Grid.js"></script>
+<script type="text/javascript" src="./javascripts/index.js"/></script>
+</body>
+</html>

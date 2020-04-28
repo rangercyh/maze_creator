@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "express": "latest",
+    "angular": "latest",
     "body-parser": "latest"
   }
 }

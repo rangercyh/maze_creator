@@ -1,8 +1,8 @@
 local maze = require "maze"
 local t1 = os.clock()
 -- if w h above 6 then search for full path slow down
-local w, h, sx, sy = 6, 6, 0, 0
-local l = 36
+local w, h, sx, sy = 4, 10, 0, 0
+local l = 32
 local ex_num, ex_limit = 11, 3
 
 
@@ -60,6 +60,8 @@ function test(w, h, sx, sy, l, ex_num, ex_limit)
     print('===== w =', t.w, 'h =', t.h, 'num =', t.num)
     w = t.w
     h = t.h
+    -- { x, y, dir, mark }
+    -- { 1, 1, [-1-3] [1,2] }
     for i = 1, t.num do
         if t[i][4] == 1 then
             add_show_char(t, t[i][1], t[i][2], 'P')
