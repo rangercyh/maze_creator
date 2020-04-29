@@ -48,23 +48,23 @@ local DOWN = 2
 local LEFT  = 4
 local RIGHT  = 8
 
-local dir = {
-    1, -- UP
-    2, -- DOWN
-    4, -- LEFT
-    8, -- RIGHT
-    3, -- UP DOWN
-    5, -- UP LEFT
-    9, -- UP RIGHT
-    6, -- DOWN LEFT
-    10, -- DOWN RIGHT
-    12, -- LEFT RIGHT
-    7, -- UP DOWN LEFT
-    11, -- UP DOWN RIGHT
-    13, -- UP LEFT RIGHT
-    14, -- DOWN LEFT RIGHT
-    15, -- UP DOWN LEFT RIGHT
-}
+-- local dir = {
+--     1, -- UP
+--     2, -- DOWN
+--     4, -- LEFT
+--     8, -- RIGHT
+--     3, -- UP DOWN
+--     5, -- UP LEFT
+--     9, -- UP RIGHT
+--     6, -- DOWN LEFT
+--     10, -- DOWN RIGHT
+--     12, -- LEFT RIGHT
+--     7, -- UP DOWN LEFT
+--     11, -- UP DOWN RIGHT
+--     13, -- UP LEFT RIGHT
+--     14, -- DOWN LEFT RIGHT
+--     15, -- UP DOWN LEFT RIGHT
+-- }
 
 local char = {
     [-1] = 'S',
