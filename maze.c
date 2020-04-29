@@ -93,10 +93,10 @@ static PATH_NODE *construct(PATH_NODE **map_node, int x, int y, int dir,
 
 #define DIR_NUM 4
 #define EMPTY_DIR -1
-#define UP 0
-#define DOWN 1
-#define LEFT 2
-#define RIGHT 3
+#define UP 1
+#define DOWN 2
+#define LEFT 4
+#define RIGHT 8
 
 static void get_neighbor(int *pos, int dir) {
     switch (dir) {

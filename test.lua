@@ -5,13 +5,17 @@ local w, h, sx, sy = 4, 10, 0, 0
 local l = 32
 local ex_num, ex_limit = 11, 3
 
+local UP = 1
+local DOWN = 2
+local LEFT  = 4
+local RIGHT  = 8
 
 local char = {
     [-1] = 'S',
-    [0] = '↑',
-    [1] = '↓',
-    [2] = '←',
-    [3] = '→',
+    [UP] = '↑',
+    [DOWN] = '↓',
+    [LEFT] = '←',
+    [RIGHT] = '→',
 }
 
 maze.set_rseed(123444)
@@ -74,17 +78,17 @@ function test(w, h, sx, sy, l, ex_num, ex_limit)
         end
     end
     for i = 1, t.num do
-        if t[i][3] == 0 then
-            add_show_char(t, t[i][1], t[i][2] + 1, char[0])
+        if t[i][3] == UP then
+            add_show_char(t, t[i][1], t[i][2] + 1, char[UP])
         end
-        if t[i][3] == 1 then
-            add_show_char(t, t[i][1], t[i][2] - 1, char[1])
+        if t[i][3] == DOWN then
+            add_show_char(t, t[i][1], t[i][2] - 1, char[DOWN])
         end
-        if t[i][3] == 2 then
-            add_show_char(t, t[i][1] + 1, t[i][2], char[2])
+        if t[i][3] == LEFT then
+            add_show_char(t, t[i][1] + 1, t[i][2], char[LEFT])
         end
-        if t[i][3] == 3 then
-            add_show_char(t, t[i][1] - 1, t[i][2], char[3])
+        if t[i][3] == RIGHT then
+            add_show_char(t, t[i][1] - 1, t[i][2], char[RIGHT])
         end
     end
     t[1].show = 'E'
@@ -109,7 +113,7 @@ function test(w, h, sx, sy, l, ex_num, ex_limit)
     end
     return s
 end
-for i = 1, 10 do
+for i = 1, 1 do
     print(test(w, h, sx, sy, l, ex_num, ex_limit))
 end
 
