@@ -13,4 +13,4 @@
 
 ![](https://github.com/rangercyh/maze_creator/blob/master/screenshots/1.jpg)
 
-![](https://github.com/rangercyh/maze_creator/blob/master/screenshots/1.jpg)
+![](https://github.com/rangercyh/maze_creator/blob/master/screenshots/2.jpg)
