@@ -50,13 +50,6 @@ local char = {
     [2] = '←',
     [3] = '→',
 }
-function get_show(t, x, y)
-    for i = 1, t.num do
-        if x == t[i][1] and y == t[i][2] then
-            return t[i].show
-        end
-    end
-end
 
 function add_show_char(t, x, y, ch)
     for i = 1, t.num do

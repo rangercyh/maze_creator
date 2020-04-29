@@ -1,6 +1,7 @@
 var form = angular.module('input_form', [])
 form.controller('input_controller', function($scope, $http) {
     let w = 3, h = 3, l = 5, x = 1, y = 1, ex_num = 0, ex_limit = 1
+    batch_set_max(w, h)
     $scope.w = w
     $scope.h = h
     $scope.l = l
@@ -9,24 +10,16 @@ form.controller('input_controller', function($scope, $http) {
     $scope.ex_num = ex_num
     $scope.ex_limit = ex_limit
 
-
-    input_cb($('#w'), 1, w)
-    input_cb($('#h'), 1, h)
-    set_l_max(3 * 3)
-    input_cb($('#l'), 0, l)
-    input_cb($('#x'), 0, x)
-    input_cb($('#y'), 0, y)
-    input_cb($('#ex_num'), 0, ex_num)
-    input_cb($('#ex_limit'), 0, ex_limit)
+    input_cb($('#w'), w, 1)
+    input_cb($('#h'), h, 1)
+    input_cb($('#l'), l, 0, 1)
+    input_cb($('#x'), x, 0, 1)
+    input_cb($('#y'), y, 0, 1)
+    input_cb($('#ex_num'), ex_num)
+    input_cb($('#ex_limit'), ex_limit)
 
     $scope.set_span = function(val) {
-        if (val > 40 && val < 80) {
-            return parseInt(val * 0.6)
-        }
-        if (val >= 80) {
-            return parseInt(val * 0.5)
-        }
-        return val
+        return get_little_span(val)
     }
 
     $scope.submit = function() {
@@ -39,8 +32,6 @@ form.controller('input_controller', function($scope, $http) {
             ex_num: $scope.ex_num,
             ex_limit: $scope.ex_limit
         }).then(function(resp) {
-            console.log('succ call')
-            console.log(resp)
             let data = resp.data
             document.getElementById("map").innerHTML=""
             if (typeof(data.errmsg) != "undefined") {
@@ -82,7 +73,19 @@ form.controller('input_controller', function($scope, $http) {
     }
 })
 
-function set_little_span(val) {
+function batch_set_max(w, h) {
+    $('#l').attr('max', w * h)
+    $('#x').attr('max', w)
+    $('#y').attr('max', h)
+}
+
+function batch_trigger_event() {
+    $('#l').trigger('refresh')
+    $('#x').trigger('refresh')
+    $('#y').trigger('refresh')
+}
+
+function get_little_span(val) {
     if (val > 40 && val < 80) {
         return parseInt(val * 0.6)
     }
@@ -92,17 +95,14 @@ function set_little_span(val) {
     return val
 }
 
-function set_l_max(val) {
-    let max = parseInt($('#l').attr('max'))
-    let cur = parseInt($('#l').val())
-    let v = set_little_span(val)
-    $('#l').attr('max', v)
-    if (cur > v) {
-        $('#l').val(v).trigger('ng-change')
+function get_cur_val(cur, max) {
+    if (cur > max) {
+        return max
     }
+    return cur
 }
 
-function input_cb(obj, is_add, deval) {
+function input_cb(obj, deval, pop_event, sub_event) {
     obj.on('input', function() {
         let max = parseInt($(this).attr('max'))
         let min = parseInt($(this).attr('min'))
@@ -111,7 +111,7 @@ function input_cb(obj, is_add, deval) {
             $(this).val(max)
         }
         if (cur < min) {
-            $(this).val(max)
+            $(this).val(min)
         }
         if (isNaN(cur)) {
             $(this).val(deval)
@@ -119,12 +119,20 @@ function input_cb(obj, is_add, deval) {
         setTimeout(function() {
             obj.trigger('ng-change')
         }, 0)
+        if (pop_event == 1) {
+            setTimeout(function() {
+                batch_trigger_event()
+            }, 0)
+        }
     })
-    if (is_add == 1) {
-        obj.on('ng-change', function() {
+    if (sub_event == 1) {
+        obj.on('refresh', function(e, w , h) {
             let scope = angular.element($('div[ng-app="input_form"]')).scope()
-            console.log('change', scope.w, scope.h)
-            set_l_max(scope.w * scope.h)
+            scope.l = get_cur_val(scope.l, get_little_span(scope.w * scope.h))
+            scope.x = get_cur_val(scope.x, scope.w)
+            scope.y = get_cur_val(scope.y, scope.h)
+            batch_set_max(scope.w, scope.h)
+            scope.$apply()
         })
     }
 }
