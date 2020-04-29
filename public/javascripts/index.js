@@ -101,10 +101,10 @@ function show_img(grids, data) {
         g = grids[data.path[i][1]]
         set_style(g, data.path[i][3])
         if (i == 1) {
-            g.innerHTML = "起点"
+            g.innerHTML = "终点"
         }
         if (i == data.path_num) {
-            g.innerHTML = "终点"
+            g.innerHTML = "起点"
         }
     }
     for (let i in data.ex) {
