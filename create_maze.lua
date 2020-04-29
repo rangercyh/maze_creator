@@ -33,7 +33,7 @@ local t = maze.create_maze({
 })
 
 if not(t) or (t.num and t.num <= 0) then
-    r.errmsg = "没找到路径，联系蔡毅恒！"
+    r.errmsg = "没找到路径!"
     return
 end
 
