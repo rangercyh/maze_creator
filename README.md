@@ -1,6 +1,6 @@
 # maze_creator
 
-    make 
+    make linux / make win
     npm install
     node app
     http://localhost:8080
